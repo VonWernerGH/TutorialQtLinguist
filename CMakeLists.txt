@@ -13,7 +13,8 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 
-set(TS_FILES)
+set(TS_FILES
+    holaMundoQt_en_US.ts)
 
 set(PROJECT_SOURCES
         main.cpp

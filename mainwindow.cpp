@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    QString qstrLenguajeFile = ":/i18n/testMultiLingue_fr_FR.qm";
+    QString qstrLenguajeFile = ":/i18n/holaMundoQt_en_US.qm";
 
     QTranslator translator;
     if (translator.load(qstrLenguajeFile)) {
