@@ -236,3 +236,54 @@ Tendremos el siguiente proceso:
 3. **Archivo de recursos:**
     - El archivo de recursos es creado desde el proceso de configuración y actualizado en el proceso de compilación antes del ligado, al llegar el proceso de ligado, se incluye en el ejecutable para que este disponible al programa.
 
+## Modificaciónes de los archivos fuente:
+
+### Archivo main.cpp
+
+En el archivo *main.cpp* agregamos entre los archivos *include* lo siguiente:
+
+    #include <QLoggingCategory>
+
+Agregamos inmediatamentes después de la llave de apertura de *main()* lo siguiente:
+
+    QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
+    qputenv("QT_ASSUME_STDERR_HAS_CONSOLE", "1");
+
+Lo anterior para poder desplegar en la consola mensajes via qDebug().
+
+### Archivo mainwindow.cpp
+
+En el archivo *mainwindow.cpp* agregamos entre los archivos *include* lo siguiente:
+
+    #include <QTranslator>
+
+Esto para tener definir las funciones para el control de traducción.
+
+Agregaremos inmediatamente después de la línea
+
+    ui->setupUi(this);
+
+La siguiente línea es para habilitar la traducción de la aplicación.
+
+    QString qstrLenguajeFile = "";
+
+La línea anterior será donde definamos el archivo de lenguaje **.qm*, el cual contendrá las traducciones del lenguaje añadido, de momento es vacio, ya que todavía no agregamos ningún archivo *.ts* que definira las cadenas de el lenguaje que seleccionaemos. A continuación agregaremos:
+
+    QTranslator translator;
+    if (translator.load(qstrLenguajeFile)) {
+        qApp->installTranslator(&translator);
+        qDebug().noquote() << tr("Archivo de lenguaje:") << qstrLenguajeFile << tr("cargado");
+    }else{
+        qDebug().noquote() << tr("Error al cargar el archivo:") << qstrLenguajeFile;
+    }
+    ui->retranslateUi(this);
+
+La clase *QTranslator* es la clase que administra todo lo concerniente a la traducción.
+
+El método *QTranslator::load(qstrLenguajeFile)* carga el archivo de lenguaje **.qm*.
+
+El método *QCoreApplication::installTranslator* Agrega el archivo de traducción *qstrLenguajeFile* a la lista de archivos de traducción que se utilizarán para las traducciones al objeto de la aplicación.
+
+El método *Ui::retranslateUi()* maneja la traducción de las propiedades de cadena del formulario de la ventana principal.
+
+Con esto ya tenemos configurado TODO para poder agregar archivo de lenguaje de traducción *.ts*.
