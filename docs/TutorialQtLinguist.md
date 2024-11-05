@@ -316,6 +316,10 @@ Al final, solo requerimos volver a compilar la aplicación para que se genere el
 
 Ejecutar la aplicación y verificar la correcta traducción de cada palabra necesaria en la traducción.
 
+## Nota:
+
+El proyecto incluye gestión con git, cada fase del proyecto incluye un commit, de forma que se puede avanzar commit tras commit desde el primer commit hasta el último para observar como avanza cada fase del proyecto con los cambios de cada uno de los archivos.
+
 ## Requisitos
 
 - Qt 6 o superior
