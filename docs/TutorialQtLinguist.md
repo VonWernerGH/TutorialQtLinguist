@@ -4,7 +4,7 @@
 
 ### Creamos la aplicación desde Qt Creator:
 
-*Iniciaremos con una aplicación muy simple sin manejo multilingue.*
+*Iniciaremos con una aplicación muy simple sin manejo multilingüe.*
 
 1. **File > New Project**
 2. **Chose a Template:** *Application (QT) > Qt Widgets Application > "Choose..."*.
@@ -89,7 +89,7 @@
     )
     ~~~
 
-El código simplificado de CMakeLists.txt es:
+    El código simplificado de *CMakeLists.txt* es:
 
     ~~~
     cmake_minimum_required(VERSION 3.16)
@@ -132,50 +132,107 @@ El código simplificado de CMakeLists.txt es:
         qt_finalize_executable(holaMundoQt)
     endif()
     ~~~
+
+## Convertir la aplicación en una aplicación Multilingüe.
+
+### Agregar requerimientos de la aplicación Multilingüe a ***CMakeLists.txt***
+
+Agregaremos debajo de la línea:
+
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
     
+Las siguientes líneas a *CMakeLists:*
 
-Paragraph.
+    find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 
-- bullet
-+ other bullet
-* another bullet
-    * child bullet
+    set(TS_FILES)
+    
+- **find_package(...):** Agrega al proyecto la librería *LinguistTools* que es necesario para la compilación de la aplicación multilingüe.
+- **set(TS_FILES):** la variable *TS_FILES* contendrá los nombres de los archivos de traducción (*.ts), de momento como no hay archivos de traducción, *TS_FILES* será vacia.
 
-1. ordered
-2. next ordered
+Agregamos la variable *TS_FILES* al final de la definición de la variable PROJECT_SOURCES para incluir los archivos de traducción al proyecto:
 
-### Third Level Heading
+    set(PROJECT_SOURCES
+        main.cpp
+        mainwindow.cpp
+        mainwindow.h
+        mainwindow.ui
+        ${TS_FILES}
+)
 
-Some *italic* and **bold** text and `inline code`.
+Después de la instrucción *qt_add_executable(...)* agregamos las siguientes líneas:
 
-An empty line starts a new paragraph.
+    qt_add_translations(
+        holaMundoQt
+        TS_FILES ${TS_FILES}
+    )
+    add_dependencies(holaMundoQt holaMundoQt_lupdate)
+    add_dependencies(holaMundoQt holaMundoQt_lrelease)
+    
+**qt_add_translations(...) y add_dependencies(...):** Las instrucciones *qt_add_translations()* y *add_dependencies()*, trabajan para el proceso de traducción en varias fases, a continuación explico cada fase, lo que hace y como se involucra dicha instrucción.
 
-Use two spaces at the end  
-to force a line break.
+### Fase de Configuración (cmake -S ... -B ...)
 
-A horizontal ruler follows:
+Utilizando la sintaxis de *[qt_add_translations](https://doc.qt.io/qt-6.2/qtlinguist-cmake-qt-add-translations.html#qt6-add-translations)():*
 
----
+    qt_add_translations(
+        {target}
+        TS_FILES {file1.ts} [file2.ts ...]
+    )
 
-Add links inline like [this link to the Qt homepage](https://www.qt.io),
-or with a reference like [this other link to the Qt homepage][1].
+Tendremos el siguiente proceso:
 
-    Add code blocks with
-    four spaces at the front.
+1. **Iniciación con *qt_add_translations*:**
+    - La función *qt_add_translations()* se configura para gestionar archivos *.ts* y genera un listado interno de archivos *.qm* que se usarán durante todas las fases.
+    - Durante esta fase, se llama a *lupdate*:
+        - Función de *lupdate*: Analiza los archivos fuente de la aplicación junto con los archivos *.ts*, donde se almacenarán las cadenas de texto extraídas del código que necesitan ser traducidas.
+        - Se crea un archivo de recursos *[qt_add_resources](https://doc.qt.io/qt-6.2/qt-add-resources.html)()* en la ruta *${CMAKE_CURRENT_BINARY_DIR}/.rcc* con el nombre del objetivo ${target}, incluye archivos **.qm*, los cuales todavia no existen, este archivo de recursos, será ligado al *${target}* en las fases de compilación, este archivo de recursos será actualizado cada vez que se ejecute una configuración del proyecto o una compilación. Los archivos de recursos **.qm* estarán disponibles para los archivos de código desde el archivo de recursos y podrá ser referenciando a travez del *Prefix "/i18n"* y *BASE "${CMAKE_CURRENT_BINARY_DIR}"* como se muestra en el ejemplo:
+       
+            ~~~
+            QString qstrLenguajeFile = ":/i18n/.rcc/${nombre del archivo .ts sin extensión}.qm";
+            ~~~
+    
+        - **Nota Importante:** En esta fase, no se crean ni modifican archivos *.qm*, ni se actualizan archivos *.ts*; sin embargo, CMake establece que archivos *.qm* se generarán en la fase de compilación.
 
-> A blockquote
-> starts with >
->
-> and has the same paragraph rules as normal text.
+2. **Objetivos Generados Automáticamente:**
+    - Al invocar *qt_add_translations()*, se crean automáticamente varios objetivos que son fundamentales para el manejo de las traducciones del proyecto:
+        - *${target}_lupdate*: Este objetivo se encarga de ejecutar *lupdate*, que es la herramienta de Qt utilizada para extraer texto traducible de los archivos de código fuente y generar o actualizar los archivos de traducción *.ts*.
+        - *${target}_lrelease*: Este objetivo se utiliza para ejecutar *lrelease*, que convierte los archivos *.ts* en archivos binarios *.qm* que son utilizados en tiempo de ejecución por la aplicación.
+        - *update_translations:* Este objetivo se utiliza como un objetivo lógico para agrupar los pasos de actualización de traducciones. Dependiendo de cómo esté configurado el CMake, puede ser utilizado para desencadenar actualizaciones de traducciones en un contexto más amplio.
+        - *release_translations:* Similar a *update_translations*, este objetivo agrupa los pasos necesarios para liberar traducciones y generar los archivos *.qm*.
 
-First Level Heading in Alternate Style
-======================================
+### Fase de Compilación (cmake --build .. por primera vez)
 
-Paragraph.
+1. Ejecuta *qt_add_translations()* Nuevamente:
+    - Durante el primer build, se ejecuta *lupdate* nuevamente (a través de *qt_add_translations*) para sincronizar los archivos *.ts* con el código fuente actual.
+    - Luego, *lrelease* es llamado para convertir estos archivos *.ts* en archivos *.qm* binarios.
 
-Second Level Heading in Alternate Style
----------------------------------------
+2. Contenido de Archivos *.qm* Iniciales:
+    - Los archivos *.qm* generados en este primer build contendrán las cadenas de texto originales, sin traducción, ya que los archivos *.ts* no han sido modificados aún por el traductor.
 
-Paragraph.
+3. Orden de Ejecución:
+    - *qt_add_translations* se ejecuta antes de la compilación del código fuente de la aplicación, asegurando que los archivos *.ts* estén sincronizados antes de generar los archivos *.qm*.
 
-[1]: https://www.qt.io
+4. Uso de *add_dependencies()*:
+    - Para garantizar que los archivos *.ts* se actualicen y que los archivos *.qm* se generen correctamente, es importante establecer las dependencias entre estos objetivos y el ejecutable. Esto se logra con la instrucción *add_dependencies()*.
+    - Por ejemplo, al agregar las siguientes líneas en el archivo *CMakeLists.txt*:
+    
+        ~~~
+        add_dependencies(${target} ${target}_lupdate)
+        add_dependencies(${target} ${target}_lrelease)
+        ~~~
+        
+    estás especificando que el ejecutable \${target} debe depender de que se ejecute primero el objetivo de actualización de traducciones (*${target}_lupdate*) y luego el objetivo de liberación de traducciones (*${target}_lrelease*). Esto asegura que, al compilar tu proyecto, las traducciones se actualicen y liberen en el orden correcto antes de construir el ejecutable final.
+
+### Proceso de Traducción
+
+1. **Intervención del Traductor:**
+    - Una vez realizado el primer build, se abren los archivos *.ts* en Qt Linguist para introducir las traducciones necesarias en cada cadena de texto generada por *lupdate*.
+
+2. **Segundo Build (Después de la Traducción):**
+    - Tras introducir las traducciones y guardar los cambios en los archivos *.ts*, es necesario realizar un segundo build (puede forzarse si es necesario) para actualizar los archivos *.qm*.
+    - En esta segunda compilación, *lrelease* toma los archivos *.ts* traducidos y genera archivos *.qm* actualizados, esta vez con las traducciones correctas.
+    
+3. **Archivo de recursos:**
+    - El archivo de recursos es creado desde el proceso de configuración y actualizado en el proceso de compilación antes del ligado, al llegar el proceso de ligado, se incluye en el ejecutable para que este disponible al programa.
+

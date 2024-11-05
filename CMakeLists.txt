@@ -11,12 +11,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+
+set(TS_FILES)
 
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        ${TS_FILES}
 )
 
 qt_add_executable(holaMundoQt
@@ -24,6 +28,13 @@ qt_add_executable(holaMundoQt
     ${PROJECT_SOURCES}
     docs/TutorialQtLinguist.md
 )
+
+qt_add_translations(
+    holaMundoQt
+    TS_FILES ${TS_FILES}
+)
+add_dependencies(holaMundoQt holaMundoQt_lupdate)
+add_dependencies(holaMundoQt holaMundoQt_lrelease)
 
 target_link_libraries(holaMundoQt PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
